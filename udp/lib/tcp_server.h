@@ -1,6 +1,5 @@
 #include "common.h"
 
-#define LISTENQ 1024
 /*
  *  tcp_server
  *  easy to use, quickly start a new point to point tcp server

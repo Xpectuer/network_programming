@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     FD_SET(socket_fd, &allreads);
     
     while(1) {
-        
+     
         readmask = allreads;
         int rc = select(socket_fd + 1, &readmask, NULL,NULL,NULL);
         if(rc <=0) 

@@ -14,25 +14,13 @@ static void recvfrom_int(int signo) {
 }
 
 int main(int argc, char **argv) {
-    int socket_fd;
+    if(argc !=2)
+		error(FATAL,0)
+	int socket_fd;
     // create a datagram socket
-    socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    struct sockaddr_in server_addr;
-    bzero(&server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(SERVER_PORT);
-
-    bind(socket_fd,(struct sockaddr *) &server_addr, sizeof(server_addr));
-
-    socklen_t client_len;
-    char message[MAXLINE];
-    count = 0;
-
-    signal(SIGINT, recvfrom_int);
-
+    socket_fd = udp_server()
     struct sockaddr_in client_addr;
+
     client_len = sizeof(client_addr);
     for(;;) {
         int n = recvfrom(socket_fd, message, MAXLINE, 0, 
@@ -48,9 +36,5 @@ int main(int argc, char **argv) {
                 strlen(send_line),0,(struct sockaddr *) &client_addr, client_len);
 
         count++;
-
     }
-
-
-
 }

@@ -6,26 +6,12 @@ void error(int status, int err, char *fmt, ...) {
     va_list ap;
 
     va_start(ap, fmt);
-    char* flag=status?"[FATAL]":"[WARNING]";
-	fprintf(stderr,"%s:",flag);
     vfprintf(stderr, fmt, ap);
-	
     va_end(ap);
     if (err)
         fprintf(stderr, ": %s (%d)\n", strerror(err), err);
     if (status)
         exit(status);
-	fputs("\n",stderr);
-}
-
-void info(char* fmt,...) {
-    va_list ap;
-    va_start(ap,fmt);
-
-
-    fputs("[INFO] ", stdout);
-    vfprintf(stdout, fmt, ap);
-    fputs("\n", stdout);
 }
 
 

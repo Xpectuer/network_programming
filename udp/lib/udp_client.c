@@ -2,10 +2,9 @@
 
 #define MAXLINE 1024
 #define SERV_PORT 9090
-int main(int argc, char **argv) {
-    if(argc != 2 ) {
-        error(1,0,"udpclient <IPAddress>");
-    }
+//int main(int argc, char **argv) {
+int udp_client(char* ip_addr, int port)
+{    
     // 初始化socket
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -14,7 +13,7 @@ int main(int argc, char **argv) {
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERV_PORT);
-    inet_pton(AF_INET, argv[1], &server_addr.sin_addr);
+    inet_pton(AF_INET, port, &server_addr.sin_addr);
 
     socklen_t server_len = sizeof(server_addr);
 
@@ -50,5 +49,4 @@ int main(int argc, char **argv) {
 
     }
     exit(0);
-
 }

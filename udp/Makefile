@@ -4,9 +4,9 @@ CLI = ./bin/cli
 CFILES = $(wildcard *.c)
 OBJS = $(CFILES:.c=.o lib/CFILES:.c=.o)
 ARCHIVES = $(wildcard lib/*.a)
-BINS = $(wildcard bin/*)
 
-all: $(CLI) $(SVR)
+SRC_SVR = udp_svr.c
+SRC_CLI = udp_cli.c
 
 $(CLI): cli.o lib/libcommon.a
 	$(CC) -lm -o $@ $< -L ./lib -l common
@@ -26,16 +26,20 @@ lib/log.o: lib/log.c headers
 lib/tcp_init.o: lib/tcp_init.c headers
 	$(CC) -c -o $@ $<
 
-lib/tcp_server.o: lib/tcp_server.c headers
+lib/udp_server.o: lib/udp_server.c headers
 	$(CC) -c -o $@ $<
-lib/libcommon.a: lib/read.o lib/log.o lib/tcp_init.o lib/tcp_server.o
+
+lib/udp_client.o: lib/udp_client.c headers
+	$(CC) -c -o $@ $<
+
+./lib/libcommon.a: ./lib/read.o ./lib/log.o ./lib/tcp_init.o ./lib/udp_server.o ./lib/udp_client.o
 	ar rcs $@ $^
 	rm -rf $^
 
-svr.o: tcp_svr.c headers
+svr.o: $(SRC_SVR) headers
 	$(CC) -c -o $@ $<
 
-cli.o: tcp_cli.c headers
+cli.o: $(SRC_CLI) headers
 	$(CC) -c -o $@ $<
 
 
@@ -46,4 +50,4 @@ lib: lib/libcommon.a
 .PHONY: clean
 
 clean:
-	rm -rf $(OUT) $(OBJS) $(ARCHIVES) $(BINS)
+	rm -rf $(OUT) $(OBJS) $(ARCHIVES)

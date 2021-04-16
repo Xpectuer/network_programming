@@ -43,13 +43,9 @@ size_t readn(int fd, void *vptr, size_t n);
 
 void error(int status, int err, char *fmt, ...);
 
-void info(char* fmt,...);
-
 int tcp_client(char* ip_addr, int port);
 
 // basic udp client for testing,
 // netcat is recommended
 int udp_client(char* ip_addr, int port);
-
-
 #endif // NOOBI_COMMON_H
