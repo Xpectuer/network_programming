@@ -57,3 +57,5 @@ dkms.conf
 
 # backups
 *.bak
+.gdb_history
+*.swp
