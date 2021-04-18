@@ -71,8 +71,9 @@ int main(int argc, char **argv)
 		//printf("%d\n", conn_fd);
 		//sleep(1);
 		
-		printf("[INFO] connection established from %s %hu\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-		
+		//	printf("[INFO] connection established from %s %hu\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+		version();				
+
 		telnet_handler(conn_fd);
 		info("%d bytes received", count);
 		count = 0;

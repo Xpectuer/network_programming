@@ -1,16 +1,13 @@
 // UDP Server
 #include "udp_server.h"
 
-static int count = 0;
-
-static void recvfrom_int(int signo)
-{
+static void recvfrom_int(int signo) {
     printf("\nreceived %d datagrams\n", count);
     exit(EXIT_SUCCESS);
 }
 
 // int main(int argc, char **argv) {
-int udp_server(int port)
+int udp_server(int port) 
 {
     int socket_fd;
     // create a datagram socket
@@ -20,18 +17,22 @@ int udp_server(int port)
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons(SERVER_PORT);
+	
+	int on = 1;
+	setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    int on = 1;
-    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    bind(socket_fd,(struct sockaddr *) &server_addr, sizeof(server_addr));
 
-    bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-
-    // socklen_t client_len;
-    // char message[MAXLINE];
-    // count = 0;
+   // socklen_t client_len;
+   // char message[MAXLINE];
+   // count = 0;
 
     signal(SIGINT, recvfrom_int);
-
-    return socket_fd;
+	
+	return socket_fd;
 }
+
+
+
+
