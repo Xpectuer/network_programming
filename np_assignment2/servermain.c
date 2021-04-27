@@ -8,10 +8,9 @@
 #include "common.h"
 // Included to get the support library
 #include <calcLib.h>
-
 #include "protocol.h"
 
-using namespace std;
+//using namespace std;
 /* Needs to be global, to be rechable by callback and main */
 int loopCount = 0;
 int terminate = 0;
@@ -30,6 +29,46 @@ void checkJobbList(int signum)
   }
 
   return;
+}
+
+static void parse_msg(char* r, struct calcMessage *req, size_t n)
+{  
+	char **s = &r;
+	req->type = ntohs(read_uint16(s));
+	req->message = ntohl(read_uint32(s));
+	req->protocol = ntohs(read_uint16(s));
+	req->major_version = ntohs(read_uint16(s));	
+	req->minor_version = ntohs(read_uint16(s));
+}
+
+void handler(int fd)
+{
+	struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    
+	char recv_buf[MAXLINE];
+	int n = recvfrom(fd, recv_buf, MAXLINE, 0,
+                         (struct sockaddr *)&client_addr, &client_len);
+	if(n < 0)
+	{
+		fatal("Unable to recvfrom client, Exit.");
+	}	
+	struct calcMessage* req;
+	req = malloc(sizeof(struct calcMessage));
+	parse_msg(recv_buf, req, sizeof(req));
+	#ifdef DEBUG
+	print_bytes(sizeof(recv_buf),recv_buf);
+	#endif
+	printf("received %d bytes, and buf is:[ %s ]\n",n,recv_buf);
+	printf("%d %d \n", req->type, req->major_version);
+	free(req);
+//        message[n] = 0;
+//        
+//        printf("received %d bytes: %s\n", n, message);
+// 
+//		sendto(socket_fd, (char*) &calc_msg,
+//               sizof(calc_msg), 0, (struct sockaddr *)&client_addr, client_len);  
+//
 }
 
 int main(int argc, char *argv[])
@@ -63,8 +102,9 @@ int main(int argc, char *argv[])
   while (terminate == 0)
   {
     printf("This is the main loop, %d time.\n", loopCount);
-    sleep(1);
+    handler(listen_fd);
     loopCount++;
+	
   }
 
   printf("done.\n");

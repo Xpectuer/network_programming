@@ -1,13 +1,13 @@
 
 all: libcalc test client server
+DBG=#-ggdb
 
 
-
-servermain.o: servermain.cpp protocol.h 
-	$(CXX) -Wall -c servermain.cpp -I.
+servermain.o: servermain.c protocol.h 
+	gcc $(DBG) -Wall -c servermain.c -I.
 
 clientmain.o: clientmain.cpp protocol.h
-	$(CXX) -Wall -c clientmain.cpp -I.
+	$(CXX) $(DBG) -Wall -c clientmain.cpp -I.
 
 main.o: main.cpp protocol.h
 	$(CXX) -Wall -c main.cpp -I.
@@ -29,7 +29,10 @@ udp_server.o: udp_server.c common.h
 log.o: log.c common.h
 	gcc -Wall -fPIC -c log.c 
 
-libudp: udp_server.o log.o
+read.o: read.c common.h
+	gcc -Wall -fPIC -c read.c
+
+libudp: udp_server.o log.o read.o
 	ar -rc libudp.a  $^
  
 calcLib.o: calcLib.c calcLib.h

@@ -4,6 +4,9 @@
 
 #define LISTENQ 1024
 #define MAXLINE 1024
+#define DEBUG
+#include "read.h"
+//#include "protocol.h"
 
 #include    <sys/types.h>    /* basic system data types */
 #include    <sys/socket.h>    /* basic socket definitions */
@@ -35,6 +38,7 @@
 #include    <sys/epoll.h>
 #endif
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -53,7 +57,7 @@ int udp_server(char* address, int port);
 
 // fatal log the error and exit with failure
 void fatal(char* s);
-
+void print_bytes(size_t size,char* buf);
 
 #ifdef __cplusplus
 }

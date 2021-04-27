@@ -1,4 +1,3 @@
-
 #ifdef __GCC_IEC_559 
 #pragma message("GCC ICE 559 defined...")
 
