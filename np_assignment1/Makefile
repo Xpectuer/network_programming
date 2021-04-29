@@ -1,5 +1,3 @@
-
-
 DBG=-ggdb
 
 SVR=bin/server
@@ -7,29 +5,29 @@ CLI=bin/client
 TEST=bin/test
 
 BINS=$(wildcard bin/*)
-
+CC=gcc-10
 
 all: libcalc $(TEST) $(CLI) $(SVR)
 
-servermain.o: servermain.cpp
-	$(CXX) -Wall $(DBG) -c servermain.cpp -I.
+servermain.o: servermain.c
+	$(CC) -Wall $(DBG) -c servermain.c -I.
 
-clientmain.o: clientmain.cpp
-	$(CXX) -Wall -c clientmain.cpp -I.
+clientmain.o: clientmain.c
+	$(CC) -Wall -c clientmain.c -I.
 
 main.o: main.cpp
-	$(CXX) -Wall -c main.cpp -I.
+	$(CC) -Wall -c main.cpp -I.
 
 
 $(TEST): main.o calcLib.o
-	$(CXX) -L./ -Wall -o $@ main.o -lcalc
+	$(CC) -L./ -Wall -o $@ main.o -lcalc
 
 
 $(CLI): clientmain.o calcLib.o libtcp
-	$(CXX)  -Wall -o $@ clientmain.o -L./ -lcalc -ltcp
+	$(CC)  -Wall -o $@ clientmain.o -L./ -lcalc -ltcp
 
 $(SVR): servermain.o calcLib.o libtcp
-	$(CXX)  -Wall -o $@ servermain.o -L./ -lcalc -ltcp
+	$(CC)  -Wall -o $@ servermain.o -L./ -lcalc -ltcp
 
 
 tcp_server.o: tcp_server.c

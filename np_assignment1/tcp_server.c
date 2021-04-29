@@ -37,7 +37,7 @@ int tcp_listen(char* address, int port)
     int rt1 = bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (rt1 < 0)
     {
-        puts("bind failed");
+        perror("bind failed");
         exit(1);
     }
     //    error(1, errno, "bind failed");
