@@ -11,7 +11,12 @@ void init()
 
 int main(int argc, char** argv)
 {
-	
+	uint32_t i;
+	scanf("%d",&i);
+	if(i > 8)
+	{
+		puts("pwn");
+	}	
 	printf("%d",sizeof(char));
     return EXIT_SUCCESS;
 }

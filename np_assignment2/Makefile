@@ -1,42 +1,41 @@
-
 all: libcalc test client server
 DBG=#-ggdb
-
+CC=gcc-10
 
 servermain.o: servermain.c protocol.h 
-	gcc $(DBG) -Wall -c servermain.c -I.
+	$(CC) $(DBG) -Wall -c servermain.c -I.
 
 clientmain.o: clientmain.cpp protocol.h
-	$(CXX) $(DBG) -Wall -c clientmain.cpp -I.
+	$(CC) $(DBG) -Wall -c clientmain.cpp -I.
 
 main.o: main.cpp protocol.h
-	$(CXX) -Wall -c main.cpp -I.
+	$(CC) -Wall -c main.cpp -I.
 
 
 test: main.o calcLib.o
-	$(CXX) -L./ -Wall -o test main.o -lcalc
+	$(CC) -L./ -Wall -o test main.o -lcalc
 
 client: clientmain.o calcLib.o libudp 
-	$(CXX) -L./ -Wall -o client clientmain.o -lcalc -ludp
+	$(CC) -L./ -Wall -o client clientmain.o -lcalc -ludp
 
 server: servermain.o calcLib.o libudp
-	$(CXX) -L./ -Wall -o server servermain.o -lcalc -ludp
+	$(CC) -L./ -Wall -o server servermain.o -lcalc -ludp
 
 
 udp_server.o: udp_server.c common.h
-	gcc -Wall -fPIC -c udp_server.c
+	$(CC) -Wall -fPIC -c udp_server.c
 
 log.o: log.c common.h
-	gcc -Wall -fPIC -c log.c 
+	$(CC) -Wall -fPIC -c log.c 
 
 read.o: read.c common.h
-	gcc -Wall -fPIC -c read.c
+	$(CC) -Wall -fPIC -c read.c
 
 libudp: udp_server.o log.o read.o
 	ar -rc libudp.a  $^
  
 calcLib.o: calcLib.c calcLib.h
-	gcc -Wall -fPIC -c calcLib.c
+	$(CC) -Wall -fPIC -c calcLib.c
 
 libcalc: calcLib.o
 	ar -rc libcalc.a  calcLib.o
