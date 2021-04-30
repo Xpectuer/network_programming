@@ -2,7 +2,7 @@
 #define ALEX_COMMON_H
 
 
-#define LISTENQ 1024
+#define LISTENQ 5
 #define MAXLINE 1024
 
 #include    <sys/types.h>    /* basic system data types */

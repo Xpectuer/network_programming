@@ -37,25 +37,52 @@ static void buf_fill(char* buf,char** protocols, int len)
      }
 } 
 
-// test: passed
+static void handle_timeout(int signo)
+{
+}
+
+void on_client_timeout(int fd)
+{
+	char* buf ="ERROR TO";
+	send(fd, buf, strlen(buf),0);
+	close(fd);
+	return;
+}
 // *enhencement of read call
 // auto set 0 for buffer
 // check for error
 // auto set the last byte to 0.
+// [5.1]set timeout handler
+// set non-blocking enhencement
 int read_plus(int fd, void* buf, size_t size)
 {
 	bzero(buf,size);
-	int n = read(fd, buf, size);
-	if(n == 0)
+	
+	int n = recv(fd, buf, size,0);
+	if(n < 0)
+	{
+		
+	    if(errno == EAGAIN || errno == EWOULDBLOCK)
+		{
+			puts("read timeout\n");
+			on_client_timeout(fd);
+			return -1;
+		}
+			
+		else
+		{
+			fatal("read error... Exit"); 
+		}
+	}
+	else if(n==0)
 	{
 		puts("client closed...");
 		close(fd);
 		return 0;
-	} 
-	if(n < 0)
-	{
-		fatal("read error... Exit");
 	}
+	
+
+	
 	((char*)buf)[n] = 0;
 	return n;
 }
@@ -107,7 +134,7 @@ void handle_int(char *ptr, int *i1, int *i2, int *iresult)
 void handler(int conn_fd)
 {   
     //setbuf(conn_fd,0);
-
+	
   	initCalcLib();
 
     char buf[MAXLINE];
@@ -132,7 +159,7 @@ void handler(int conn_fd)
 	int n = read_plus(conn_fd, buf, MAXLINE);  
 	if(strcmp(buf,"OK")!=0)
 	{
-		puts("protocol not supported...");
+		//puts("protocol not supported...");
 		close(conn_fd);
 		return;
 	}
@@ -232,10 +259,17 @@ int main(int argc, char *argv[]){
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
     int conn_fd;
+	
+
+	fd_set readmask;
+	fd_set allreads;
+	FD_ZERO(&allreads);
+	FD_SET(0, &allreads);
+	FD_SET(listen_fd, &allreads);
     while(1)
     {
-
-          // Accept Connection
+			
+          // Accept Connection 
           if((conn_fd = accept(listen_fd, (struct sockaddr *)&client_addr, &client_len)) < 0)
           {
               puts("accept failed!");
@@ -246,6 +280,12 @@ int main(int argc, char *argv[]){
           #ifdef DEBUG
           printf("[INFO] connection established from %s %hu\n", cli_addr, pport);
           #endif
+		 // set timeout
+		struct timeval read_timeout;
+		read_timeout.tv_sec = 20;
+		read_timeout.tv_usec = 0;
+		setsockopt(conn_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&read_timeout, sizeof read_timeout);
+	
           // -----handler----
           handler(conn_fd);
           close(conn_fd);

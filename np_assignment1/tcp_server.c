@@ -33,6 +33,7 @@ int tcp_listen(char* address, int port)
     int on = 1;
     // set reuse, to perform multiple client.
     setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	// --- bind ---
 
     int rt1 = bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (rt1 < 0)
@@ -41,7 +42,9 @@ int tcp_listen(char* address, int port)
         exit(1);
     }
     //    error(1, errno, "bind failed");
+	
 
+	
     int rt2 = listen(listen_fd, LISTENQ);
     if (rt2 < 0)
     {
