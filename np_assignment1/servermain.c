@@ -282,7 +282,7 @@ int main(int argc, char *argv[]){
           #endif
 		 // set timeout
 		struct timeval read_timeout;
-		read_timeout.tv_sec = 20;
+		read_timeout.tv_sec = 5;
 		read_timeout.tv_usec = 0;
 		setsockopt(conn_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&read_timeout, sizeof read_timeout);
 	
