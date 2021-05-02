@@ -8,7 +8,7 @@
 #include "common.h"
 // Included to get the support library
 #include <calcLib.h>
-#include "protocol.h"
+//#include "protocol.h"
 
 #define CHILD 0
 
@@ -16,47 +16,7 @@ uint16_t major_version = 1;
 uint16_t minor_version = 0; 
 uint16_t down = 0;
 
-static double ntohlf(double x)
-{
-	int n = 1;
-	// little endian if true
-	char* f = (char*) &x;
-	int tmp;
-	if(*(char *)&n == 1) 
-	{	
-		for(int i = 0; i < 4;i++)
-		{
-			f[i] = tmp;f[i]=f[7-i];f[i]=f[7-i];
-		}	
-	}
-	return x;
-}
 
-
-void parse_protocol(struct calcProtocol *response)
-{
-	response->type=ntohs(response->type);
-	response->major_version=ntohs(response->major_version);		
-	response->minor_version=ntohs(response->minor_version);
-	response->id=ntohl(response->id);
-	response->arith=ntohl(response->arith);
-	response->inValue1=(uint32_t)ntohl(response->inValue1);
-	response->inValue2=(uint32_t)ntohl(response->inValue2);
-	response->inResult=(uint32_t)ntohl(response->inResult);
-	response->flValue1=ntohlf(response->flValue1);
-	response->flValue2=ntohlf(response->flValue2);
-	response->flResult=ntohlf(response->flResult);
-}
-
-void parse_msg(struct calcMessage *msg)
-{
-	msg->type=ntohs(msg->type);
-	msg->message=ntohl(msg->message);
-	msg->protocol=ntohs(msg->protocol);
-	msg->protocol=ntohs(msg->major_version);
-	msg->protocol=ntohs(msg->minor_version);
-
-}
 
 void on_client_timeout(int fd,struct sockaddr *client_addr, socklen_t addr_len)
 {
@@ -70,56 +30,63 @@ void on_client_timeout(int fd,struct sockaddr *client_addr, socklen_t addr_len)
 // 0  integer
 // -1 error
 
-// *enhencement of read call
-// auto set 0 for buffer
-// check for error
-// auto set the last byte to 0.
-// [5.1]set timeout handler
-// set non-blocking enhencement
-int recvfrom_plus(int fd, void* buf, size_t size, struct sockaddr_in *client_addr, socklen_t *client_len)
+void handler(int fd)
 {
-	bzero(buf,size);	
-	int n = recvfrom(fd, buf, size, 0, (struct sockaddr *)client_addr, client_len);
-	if(n < 0)
-	{
-		
-	    if(errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			puts("read timeout\n");
-			on_client_timeout(fd, (struct sockaddr_in *)client_addr, *client_len);
-			return -1;
-		}
-			
-		else
-		{
-			fatal("read error... Exit"); 
-		}
-	}
-	else if(n==0)
-	{
-		puts("client closed...");
-		close(fd);
-		return 0;
-	}
+
+}
+
+
+int udp_accept(int listen_fd, struct sockaddr_in server_addr)
+{
+
+	int ret;
+	int conn_fd;
+	int reuse = 1;
+	struct sockaddr_in client_addr;
+	socklen_t          client_len = sizeof(client_addr);
+	struct calcMessage  message; 	
+ 	struct calcProtocol protocol; 
 	
+	ret = recvfrom(listen_fd, &message, sizeof(message), 0, (struct sockaddr *)&client_addr, &client_len);
+	if(ret == -1)
+	{
+		perror("recvfrom");
+		exit(1);
+	}	
+
+	if((conn_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+	{
+		perror("socket");
+		fatal("socket");
+	}
 	#ifdef DEBUG
-	char *cli_addr = inet_ntoa(client_addr->sin_addr);
-	uint16_t pport = client_addr->sin_port;
-	printf("[info] connection established from %s %hu\n", cli_addr, pport);
+	printf("listen fd: %d; connection fd: %d.\n", listen_fd, conn_fd);
 	#endif
-	
-	
-	//((char*)buf)[n] = 0;
-	return n;
+
+	ret = setsockopt(conn_fd, SOL_SOCKET, SO_REUSEADDR, &reuse,sizeof(reuse));
+    if (ret == -1) {
+        exit(1);
+    }
+
+    ret = setsockopt(conn_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+    if (ret == -1) {
+        exit(1);
+    }
+	ret = bind(conn_fd, (struct sockaddr *) &server_addr, sizeof(struct sockaddr));	
+	if(ret == -1)
+	{
+		perror("conn bind");
+		exit(1);
+	}
+
+	if(connect(conn_fd, (struct sockaddr *) &client_addr, sizeof(struct sockaddr)) == -1)
+	{
+		perror("connect");
+		exit(1);
+	}
+
+
 }
-
-void handler()
-{
-
-
-}
-
-
 
 int main(int argc, char *argv[])
 {
@@ -134,37 +101,99 @@ int main(int argc, char *argv[])
 	
 	char sign[] = ":";
 	char *address = strtok(arg, sign);
-	int port = atoi(strtok(NULL, sign));
-		
+	int port = atoi(strtok(NULL, sign));	
 	initCalcLib();	
-	int fd = udp_server(address, port);
-		// ------------------
-		// for checking is down	
-		
-		struct sockaddr_in client_addr;
-		socklen_t client_len = sizeof(client_addr); 
+	int ret;
+ 	int listen_fd;	
+	int epfd;
+    // create a datagram socket
+    listen_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-		printf("%s:%d\n", address, port);
-		struct calcMessage *msg = (struct calcMessage *)malloc(sizeof(struct calcMessage));
-		struct calcProtocol * protocol= (struct calcProtocol *)malloc(sizeof(struct calcProtocol));
-				
-		// 1. receive first packet / validation
-		int n = recvfrom(fd, (struct calcMessage*) msg, sizeof(struct calcMessage), 0, (struct sockaddr *) &client_addr, &client_len);		
-		if(n == -1)
+    struct sockaddr_in server_addr;
+    bzero(&server_addr, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    if(strcmp(address, "0.0.0.0")==0)
+    {
+        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    } else 
+    {
+        inet_pton(AF_INET, address, &server_addr.sin_addr);
+    }
+    
+    server_addr.sin_port = htons(port);
+
+    int reuse = 1;
+    ret = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+	if(ret == -1)
+	{
+		perror("setsockopt addr");
+		exit(1);
+	}
+
+	ret = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+	if(ret == -1)
+	{
+		perror("setsockopt port");
+		exit(1);
+	}
+
+
+   	if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+	{
+		perror("bind listen");
+		exit(1);
+	}
+
+	epfd = epoll_create(MAX_POLL_SIZE); 
+	
+	struct epoll_event ev;
+    struct epoll_event events[MAX_POLL_SIZE];
+
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = listen_fd;
+
+	if(epoll_ctl(epfd, EPOLL_CTL_ADD, listen_fd, &ev) < 0)
+	{
+		fprintf(stderr, "unable to add event for fd: %d\n", listen_fd);
+		return -1;
+	} 
+#ifdef DEBUG
+	puts("add ok.");
+#endif
+	int nfds;
+	for(;;)
+	{
+		// max event return 999 no timeout
+		nfds = epoll_wait(epfd, events, 999, -1);	
+		if(nfds == -1)
 		{
-			
-			fatal("recvfrom 1");
+			perror("epoll_wait");
+			break;
 		}
-		parse_msg(msg);
-		// version validation
-		send_err(fd, msg, );
 		
-		
-		
-	
+		for(int i=0; i < nfds; i++)
+		{	
+			// accept
+			if(events[i].data.fd == listen_fd)
+			{
 
-
-	
-	printf("done.\n");
+#ifdef DEBUG
+				printf("listen fd: %d\n", listen_fd);
+#endif	
+				struct epoll_event conn_ev;
+				int conn_fd = udp_accept(listen_fd, server_addr);
+				if(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, &conn_ev) < 0)
+				{
+					fprintf(stderr, "unable to add event for conn fd: %d\n", conn_fd);
+					return -1;
+				} 
+				else
+				{
+					handler(events[i].data.fd);
+				}		  	
+			}
+		}	
+	}
+	close(listen_fd);
 	return (0);
  }

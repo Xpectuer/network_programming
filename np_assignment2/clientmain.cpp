@@ -5,7 +5,7 @@
 
 // Included to get the support library
 #include <calcLib.h>
-#include "protocol.h"
+// #include "protocol.h"
 
 
 int major_version = 1;
@@ -15,22 +15,6 @@ void usage()
 {
     puts("usage: ./client <ip:port>");
     exit(1);
-}
-
-static double ntohlf(double x)
-{
-	int n = 1;
-	// little endian if true
-	char* f = (char*) &x;
-	int tmp;
-	if(*(char *)&n == 1) 
-	{	
-		for(int i = 0; i < 4;i++)
-		{
-			f[i] = tmp;f[i]=f[7-i];f[i]=f[7-i];
-		}	
-	}
-	return x;
 }
 
 void init()
@@ -49,65 +33,10 @@ void make_msg(calcMessage *msg)
 	msg->minor_version=htons(minor_version);	
 }
 
-//void parse_protocol(char* r, struct calcProtocol *response, size_t n)
-//{
-//	char** s = &r;
-//	response->type=ntohs(read_uint16(s));
-//	response->major_version=ntohs(read_uint16(s));		
-//	response->minor_version=ntohs(read_uint16(s));
-//	response->id=ntohl(read_uint32(s));
-//	response->arith=ntohl(read_uint32(s));
-//	response->inValue1=(uint32_t)ntohl(read_int32(s));
-//	response->inValue2=(uint32_t)ntohl(read_int32(s));
-//	response->inResult=(uint32_t)ntohl(read_int32(s));
-//	response->flValue1=read_lf(s);
-//	response->flValue2=read_lf(s);
-//	response->flResult=read_lf(s);
-//}
-//
-void parse_protocol(struct calcProtocol *response)
-{
-	response->type=ntohs(response->type);
-	response->major_version=ntohs(response->major_version);		
-	response->minor_version=ntohs(response->minor_version);
-	response->id=ntohl(response->id);
-	response->arith=ntohl(response->arith);
-	response->inValue1=(uint32_t)ntohl(response->inValue1);
-	response->inValue2=(uint32_t)ntohl(response->inValue2);
-	response->inResult=(uint32_t)ntohl(response->inResult);
-	response->flValue1=ntohlf(response->flValue1);
-	response->flValue2=ntohlf(response->flValue2);
-	response->flResult=ntohlf(response->flResult);
-}
-
-void parse_msg(struct calcMessage *msg)
-{
-	msg->type=ntohs(msg->type);
-	msg->message=ntohl(msg->message);
-	msg->protocol=ntohs(msg->protocol);
-	msg->protocol=ntohs(msg->major_version);
-	msg->protocol=ntohs(msg->minor_version);
-
-}
-
 void abort()
 {
 	fatal("Aborting...");
 }
-
-// opt
-#define SEND 0
-#define RECV 1
-int protocol_ctl(int opt, struct calcProtocol *response)
-{
-	
-}
-
-int msg_ctl(int opt, struct calcMessage *msg)
-{
-
-}
-
 
 inline int version_check(calcMessage *msg, calcProtocol *response)
 {

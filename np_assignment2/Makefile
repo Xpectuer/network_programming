@@ -1,8 +1,8 @@
 all: libcalc test client server
 	clear&&echo 'compile complete!'
 
-DBG=#-ggdb
-CC=gcc-10
+DBG=-ggdb
+CC=gcc
 
 servermain.o: servermain.c protocol.h 
 	$(CC) $(DBG) -Wall -c servermain.c -I.
@@ -33,7 +33,11 @@ log.o: log.c common.h
 read.o: read.c common.h
 	$(CC) -Wall -fPIC -c read.c
 
-libudp: udp_server.o log.o read.o
+utils.o: utils.c common.h
+	$(CC) -Wall -fPIC -c $<;
+
+
+libudp: udp_server.o log.o read.o utils.o
 	ar -rc libudp.a  $^
  
 calcLib.o: calcLib.c calcLib.h

@@ -1,13 +1,21 @@
 #ifndef ALEX_COMMON_H
 #define ALEX_COMMON_H
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,5,44)
+#error kernel version too low, update your kernel and remake 
+#endif
+
+
+#define EPOLL_ENABLE
 #define LISTENQ 1024
 #define MAXLINE 1024
 #define INIT_SIZE 128
+#define MAX_POLL_SIZE 128
 #define DEBUG
 
 #include "read.h"
-//#include "protocol.h"
+#include "protocol.h"
 
 #include <sys/types.h>  /* basic system data types */
 #include <sys/socket.h> /* basic socket definitions */
@@ -64,7 +72,12 @@ extern "C"
     // fatal log the error and exit with failure
     void fatal(char *s);
     void print_bytes(size_t size, char *buf);
-
+	
+	// utilities for parsing protocol
+	
+	double ntohlf(double x);
+	void parse_protocol(struct calcProtocol *response);
+	void parse_msg(struct calcMessage *msg);
 #ifdef __cplusplus
 }
 #endif
