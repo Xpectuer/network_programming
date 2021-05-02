@@ -10,103 +10,161 @@
 #include <calcLib.h>
 #include "protocol.h"
 
-//using namespace std;
-/* Needs to be global, to be rechable by callback and main */
-int loopCount = 0;
-int terminate = 0;
+#define CHILD 0
 
-/* Call back function, will be called when the SIGALRM is raised when the timer expires. */
-void checkJobbList(int signum)
+uint16_t major_version = 1;
+uint16_t minor_version = 0; 
+uint16_t down = 0;
+
+static double ntohlf(double x)
 {
-  // As anybody can call the handler, its good coding to check the signal number that called it.
-
-  printf("Let me be, I want to sleep.\n");
-
-  if (loopCount > 20)
-  {
-    printf("I had enough.\n");
-    terminate = 1;
-  }
-
-  return;
+	int n = 1;
+	// little endian if true
+	char* f = (char*) &x;
+	int tmp;
+	if(*(char *)&n == 1) 
+	{	
+		for(int i = 0; i < 4;i++)
+		{
+			f[i] = tmp;f[i]=f[7-i];f[i]=f[7-i];
+		}	
+	}
+	return x;
 }
 
-static void parse_msg(char* r, struct calcMessage *req, size_t n)
-{  
-	char **s = &r;
-	req->type = ntohs(read_uint16(s));
-	req->message = ntohl(read_uint32(s));
-	req->protocol = ntohs(read_uint16(s));
-	req->major_version = ntohs(read_uint16(s));	
-	req->minor_version = ntohs(read_uint16(s));
+
+void parse_protocol(struct calcProtocol *response)
+{
+	response->type=ntohs(response->type);
+	response->major_version=ntohs(response->major_version);		
+	response->minor_version=ntohs(response->minor_version);
+	response->id=ntohl(response->id);
+	response->arith=ntohl(response->arith);
+	response->inValue1=(uint32_t)ntohl(response->inValue1);
+	response->inValue2=(uint32_t)ntohl(response->inValue2);
+	response->inResult=(uint32_t)ntohl(response->inResult);
+	response->flValue1=ntohlf(response->flValue1);
+	response->flValue2=ntohlf(response->flValue2);
+	response->flResult=ntohlf(response->flResult);
 }
 
-void handler(int fd)
+void parse_msg(struct calcMessage *msg)
 {
-	struct sockaddr_in client_addr;
-    socklen_t client_len = sizeof(client_addr);
-    
-	char recv_buf[MAXLINE];
-	int n = recvfrom(fd, recv_buf, MAXLINE, 0,
-                         (struct sockaddr *)&client_addr, &client_len);
+	msg->type=ntohs(msg->type);
+	msg->message=ntohl(msg->message);
+	msg->protocol=ntohs(msg->protocol);
+	msg->protocol=ntohs(msg->major_version);
+	msg->protocol=ntohs(msg->minor_version);
+
+}
+
+void on_client_timeout(int fd,struct sockaddr *client_addr, socklen_t addr_len)
+{
+	char* buf ="ERROR TO";
+	sendto(fd, buf, strlen(buf),0, client_addr, addr_len);
+	return;
+}
+
+// return:
+// 1  float
+// 0  integer
+// -1 error
+
+// *enhencement of read call
+// auto set 0 for buffer
+// check for error
+// auto set the last byte to 0.
+// [5.1]set timeout handler
+// set non-blocking enhencement
+int recvfrom_plus(int fd, void* buf, size_t size, struct sockaddr_in *client_addr, socklen_t *client_len)
+{
+	bzero(buf,size);	
+	int n = recvfrom(fd, buf, size, 0, (struct sockaddr *)client_addr, client_len);
 	if(n < 0)
 	{
-		fatal("Unable to recvfrom client, Exit.");
-	}	
-	struct calcMessage* req;
-	req = malloc(sizeof(struct calcMessage));
-	parse_msg(recv_buf, req, sizeof(req));
+		
+	    if(errno == EAGAIN || errno == EWOULDBLOCK)
+		{
+			puts("read timeout\n");
+			on_client_timeout(fd, (struct sockaddr_in *)client_addr, *client_len);
+			return -1;
+		}
+			
+		else
+		{
+			fatal("read error... Exit"); 
+		}
+	}
+	else if(n==0)
+	{
+		puts("client closed...");
+		close(fd);
+		return 0;
+	}
+	
 	#ifdef DEBUG
-	print_bytes(sizeof(recv_buf),recv_buf);
+	char *cli_addr = inet_ntoa(client_addr->sin_addr);
+	uint16_t pport = client_addr->sin_port;
+	printf("[info] connection established from %s %hu\n", cli_addr, pport);
 	#endif
-	printf("received %d bytes, and buf is:[ %s ]\n",n,recv_buf);
-	printf("%d %d \n", req->type, req->major_version);
-	free(req);
-//        message[n] = 0;
-//        
-//        printf("received %d bytes: %s\n", n, message);
-// 
-//		sendto(socket_fd, (char*) &calc_msg,
-//               sizof(calc_msg), 0, (struct sockaddr *)&client_addr, client_len);  
-//
+	
+	
+	//((char*)buf)[n] = 0;
+	return n;
 }
+
+void handler()
+{
+
+
+}
+
+
 
 int main(int argc, char *argv[])
 {
 
-  /* Do more magic */
-
-  /* 
-     Prepare to setup a reoccurring event every 10s. If it_interval, or it_value is omitted, it will be a single alarm 10s after it has been set. 
-  */
-  struct itimerval alarmTime;
-  alarmTime.it_interval.tv_sec = 10;
-  alarmTime.it_interval.tv_usec = 10;
-  alarmTime.it_value.tv_sec = 10;
-  alarmTime.it_value.tv_usec = 10;
-
-  char *arg = argv[1];
-
-  char sign[] = ":";
-  char *address = strtok(arg, sign);
-  int port = atoi(strtok(NULL, sign));
-
-  int listen_fd = udp_server(address, port);
-
-  /* Regiter a callback function, associated with the SIGALRM signal, which will be raised when the alarm goes of */
-  signal(SIGALRM, checkJobbList);
-  setitimer(ITIMER_REAL, &alarmTime, NULL); // Start/register the alarm.
-
-
-  printf("%s:%d\n", address, port);
-  while (terminate == 0)
-  {
-    printf("This is the main loop, %d time.\n", loopCount);
-    handler(listen_fd);
-    loopCount++;
+	/* Do more magic */
+	if(argc != 2)	fatal("usage: ./server <ip>:<port>");	
+	/* 
+	   Prepare to setup a reoccurring event every 10s. If it_interval, or it_value is omitted, it will be a single alarm 10s after it has been set. 
+	*/
+			
+	char *arg = argv[1];
 	
-  }
+	char sign[] = ":";
+	char *address = strtok(arg, sign);
+	int port = atoi(strtok(NULL, sign));
+		
+	initCalcLib();	
+	int fd = udp_server(address, port);
+		// ------------------
+		// for checking is down	
+		
+		struct sockaddr_in client_addr;
+		socklen_t client_len = sizeof(client_addr); 
 
-  printf("done.\n");
-  return (0);
-}
+		printf("%s:%d\n", address, port);
+		struct calcMessage *msg = (struct calcMessage *)malloc(sizeof(struct calcMessage));
+		struct calcProtocol * protocol= (struct calcProtocol *)malloc(sizeof(struct calcProtocol));
+				
+		// 1. receive first packet / validation
+		int n = recvfrom(fd, (struct calcMessage*) msg, sizeof(struct calcMessage), 0, (struct sockaddr *) &client_addr, &client_len);		
+		if(n == -1)
+		{
+			
+			fatal("recvfrom 1");
+		}
+		parse_msg(msg);
+		// version validation
+		send_err(fd, msg, );
+		
+		
+		
+	
+
+
+	
+	printf("done.\n");
+	return (0);
+ }

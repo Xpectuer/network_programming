@@ -1,4 +1,6 @@
 all: libcalc test client server
+	clear&&echo 'compile complete!'
+
 DBG=#-ggdb
 CC=gcc-10
 

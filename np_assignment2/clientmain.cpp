@@ -144,7 +144,7 @@ int main(int argc, char *argv[]){
     socklen_t server_len = sizeof(server_addr); 
     struct sockaddr *reply_addr;
     reply_addr =  (sockaddr*)malloc(server_len);
-
+	
     // +1 in case of buffer overflow
     //char send_buf[MAXLINE], recv_buf[MAXLINE+1];
 	char send_buf[MAXLINE];
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]){
 		#endif
 		len = 0;
 		int n = recvfrom(fd, (struct calcMessage *) msg, sizeof(struct calcMessage), 0, reply_addr, &len); 	
-		if(rt ==-1)
+		if(rt == -1)
 		{
 			puts("recv timeout, resending...");
 			//fatal("Unable to receive msg, Exit.");

@@ -2,13 +2,13 @@
 
 
 // for testing
-static void print_bytes(int n, char buf[n])
+static void print_bytes(int n,void* buf)
 {
 	puts("the byte array is: ");
 	fputc('[',stdout);
 	for(int i=0;i<n;i++)
 	{
-		fprintf(stdout,"\'%c\' ",buf[i]);
+		fprintf(stdout,"\'%c\' ",((char*)&buf)[i]);
 	}
 	fputc(']',stdout);
 	fputc('\n',stdout);
