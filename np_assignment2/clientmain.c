@@ -24,7 +24,7 @@ void init()
     setbuf(stderr,0);
 }
 
-void make_msg(calcMessage *msg)
+void make_msg(struct calcMessage *msg)
 {
 	msg->type=htons(22);
 	msg->message=htons(0);
@@ -38,14 +38,15 @@ void abort()
 	fatal("Aborting...");
 }
 
-inline int version_check(calcMessage *msg, calcProtocol *response)
+inline int version_check(struct calcMessage *msg, struct calcProtocol *response)
 {
 	return (ntohs(msg->major_version)==ntohs(response->major_version))?0:1;
 } 
 
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
     init();
     /* Do magic */
     if(argc != 2) usage(); 
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]){
 	//setbuf((FILE*)fd,0);
 	
 	struct timeval read_timeout;
-	read_timeout.tv_sec = 2;
+	read_timeout.tv_sec = 10;
 	read_timeout.tv_usec = 0;
 	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
 	// ---
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]){
 
     socklen_t server_len = sizeof(server_addr); 
     struct sockaddr *reply_addr;
-    reply_addr =  (sockaddr*)malloc(server_len);
+    reply_addr =  (struct sockaddr*)malloc(server_len);
 	
     // +1 in case of buffer overflow
     //char send_buf[MAXLINE], recv_buf[MAXLINE+1];
@@ -85,15 +86,17 @@ int main(int argc, char *argv[]){
 	
 	msg = (struct calcMessage* )malloc(sizeof(struct calcMessage));
 	make_msg(msg);
-	#ifdef DEBUG
+
+#ifdef DEBUG
 	printf("message is: %d\n", msg->type);
 	puts("send to");
-	#endif	
+#endif	
 
 	// sendto 	
 	struct calcProtocol* response; 
 	response = (struct calcProtocol*) malloc(sizeof(struct calcProtocol));
-	for(;;)
+
+	for(int t = 10;t>=0;t--)
 	{
 		size_t rt = sendto(fd,
 	                       msg, msg_len, 
@@ -105,8 +108,10 @@ int main(int argc, char *argv[]){
 		}
 	
 		len = 0;	
+#ifdef DEBUG
 		printf("send %d bytes..\n", sizeof(struct calcProtocol));
-		
+#endif		
+
 		rt = recvfrom(fd, (struct calcProtocol*) response, sizeof(struct calcProtocol), 0, reply_addr, &len);
 		// resending
 		if(rt ==-1)
@@ -114,6 +119,11 @@ int main(int argc, char *argv[]){
 			puts("recv timeout, resending...");
 			//fatal("Unable to receive msg, Exit.");
 			continue;
+		}
+		if(rt != sizeof(struct calcProtocol))
+		{
+			fprintf(stderr, "%d %d version not applicable\n", rt, sizeof(struct calcProtocol));
+			exit(1);	
 		}
 		break;
 	}
@@ -128,6 +138,7 @@ int main(int argc, char *argv[]){
 		'/'
 	};
 	response->type++;	
+	printf("arith: %d\n", response->arith);
 	if(response->arith < 5)
 	{	
 		printf("%d %c %d \n",
@@ -156,6 +167,7 @@ int main(int argc, char *argv[]){
 			send_buf[i] = 0; 
 		}
 	
+
 		response->flResult = (double) strtod(send_buf, NULL);
 	}	
 	else 
@@ -163,37 +175,43 @@ int main(int argc, char *argv[]){
 		puts("Invalid Arith...Exit.");
 		abort();	
 	}
+// --- -
+	// sleep(10);
 	
-	for(;;)
-	{
 		int rt = sendto(fd,(struct calcProtocol *) response,sizeof(struct calcProtocol) , 
 		            0, (struct sockaddr *) &server_addr, server_len);
 		if(rt < 0)
 		{
 			fatal("Unable to send response...Exit");	
 		}		
-		#ifdef DEBUG
+#ifdef DEBUG
 		printf("sent %d bytes to server\n",rt);
-		#endif
+#endif
 		len = 0;
+		// recv result message
+
 		int n = recvfrom(fd, (struct calcMessage *) msg, sizeof(struct calcMessage), 0, reply_addr, &len); 	
 		if(rt == -1)
 		{
-			puts("recv timeout, resending...");
-			//fatal("Unable to receive msg, Exit.");
-			continue;
+			puts("recv timeout...");
+			return 1;
 		}
-		#ifdef DEBUG
-		printf("received %d bytes from server\n", n);
-		#endif	
-		break;
-	}		
-	char* msg_sign[2]={
+
+		parse_msg(msg);
+#ifdef DEBUG
+		printf("received %d,%d bytes from server\n",msg->message, n);
+#endif	
+		
+			
+
+
+
+	char* msg_sign[3]={
+		"NOT APPLICABLE",
 		"OK",
 		"NOT OK"
 	};
-	parse_msg(msg);
-	printf("%s\n", msg_sign[(msg->message-1)&1]);
+	printf("%s\n", msg_sign[msg->message]);
 		
 	free(response);
 	free(msg);

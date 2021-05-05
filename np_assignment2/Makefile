@@ -1,27 +1,32 @@
-all: libcalc test client server
-	clear&&echo 'compile complete!'
 
 DBG=-ggdb
 CC=gcc
+CLI=bin/client 
+SVR=bin/server
+TST=bin/test
+PTHREAD=-pthread
+
+all: libcalc $(CLI) $(SVR) $(TST)
+	echo 'compile complete!'
 
 servermain.o: servermain.c protocol.h 
 	$(CC) $(DBG) -Wall -c servermain.c -I.
 
-clientmain.o: clientmain.cpp protocol.h
-	$(CC) $(DBG) -Wall -c clientmain.cpp -I.
+clientmain.o: clientmain.c protocol.h
+	$(CC) $(DBG) -Wall -c clientmain.c -I.
 
 main.o: main.cpp protocol.h
 	$(CC) -Wall -c main.cpp -I.
 
 
-test: main.o calcLib.o
-	$(CC) -L./ -Wall -o test main.o -lcalc
+$(TST): main.o calcLib.o
+	$(CC) -L./ -Wall -o $@ main.o -ludp
 
-client: clientmain.o calcLib.o libudp 
-	$(CC) -L./ -Wall -o client clientmain.o -lcalc -ludp
+$(CLI): clientmain.o calcLib.o libudp 
+	$(CC) -L./ -Wall -o $@ clientmain.o  -ludp
 
-server: servermain.o calcLib.o libudp
-	$(CC) -L./ -Wall -o server servermain.o -lcalc -ludp
+$(SVR): servermain.o calcLib.o libudp
+	$(CC) -L./  $(PTHREAD) -Wall -o $@ servermain.o  -ludp
 
 
 udp_server.o: udp_server.c common.h
@@ -30,14 +35,21 @@ udp_server.o: udp_server.c common.h
 log.o: log.c common.h
 	$(CC) -Wall -fPIC -c log.c 
 
+
 read.o: read.c common.h
 	$(CC) -Wall -fPIC -c read.c
 
 utils.o: utils.c common.h
 	$(CC) -Wall -fPIC -c $<;
 
+accept.o: accept.c common.h
+	$(CC) -Wall -fPIC -c $<;
 
-libudp: udp_server.o log.o read.o utils.o
+
+handler.o: handler.c common.h
+	$(CC) $(DBG) -Wall -fPIC -c $<;
+
+libudp: udp_server.o log.o read.o utils.o calcLib.o accept.o  handler.o
 	ar -rc libudp.a  $^
  
 calcLib.o: calcLib.c calcLib.h

@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -7,92 +8,86 @@
 /* You will to add includes here */
 #include "common.h"
 // Included to get the support library
-#include <calcLib.h>
-//#include "protocol.h"
-
-#define CHILD 0
-
-uint16_t major_version = 1;
-uint16_t minor_version = 0; 
-uint16_t down = 0;
+//#include <calcLib.h>
 
 
+// context of server
 
-void on_client_timeout(int fd,struct sockaddr *client_addr, socklen_t addr_len)
+
+context_t *server;
+
+void disconnect(int fd)
 {
-	char* buf ="ERROR TO";
-	sendto(fd, buf, strlen(buf),0, client_addr, addr_len);
-	return;
-}
-
-// return:
-// 1  float
-// 0  integer
-// -1 error
-
-void handler(int fd)
-{
+	// over the sessfdon	
+	server->state[fd] = MSG_RCV;	
+	server->timeout[fd] = 0;
+	server->mail_box[fd]=0;
+	server->results[fd].iresult=0;
+	server->results[fd].fresult=0.0;
+	epoll_ctl(server->epfd, EPOLL_CTL_DEL, fd, NULL);
+	// TODO: may be bug
+	close(fd);	
 
 }
 
-
-int udp_accept(int listen_fd, struct sockaddr_in server_addr)
+void timer_runner(void* fdp)
 {
+	sleep(TIMEOUT_INTERVAL);
+	// global context
+	puts("www");
+	int fd= *(int*) fdp;
+#ifdef DEBUG
+	printf("server:%p fd:%d\n ",server,fd);
+#endif
+	server->timeout[fd] = 1;	
+	free(fdp);
+}
 
-	int ret;
-	int conn_fd;
-	int reuse = 1;
-	struct sockaddr_in client_addr;
-	socklen_t          client_len = sizeof(client_addr);
-	struct calcMessage  message; 	
- 	struct calcProtocol protocol; 
-	
-	ret = recvfrom(listen_fd, &message, sizeof(message), 0, (struct sockaddr *)&client_addr, &client_len);
-	if(ret == -1)
-	{
-		perror("recvfrom");
-		exit(1);
-	}	
-
-	if((conn_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-	{
-		perror("socket");
-		fatal("socket");
-	}
-	#ifdef DEBUG
-	printf("listen fd: %d; connection fd: %d.\n", listen_fd, conn_fd);
-	#endif
-
-	ret = setsockopt(conn_fd, SOL_SOCKET, SO_REUSEADDR, &reuse,sizeof(reuse));
-    if (ret == -1) {
-        exit(1);
-    }
-
-    ret = setsockopt(conn_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
-    if (ret == -1) {
-        exit(1);
-    }
-	ret = bind(conn_fd, (struct sockaddr *) &server_addr, sizeof(struct sockaddr));	
-	if(ret == -1)
-	{
-		perror("conn bind");
-		exit(1);
-	}
-
-	if(connect(conn_fd, (struct sockaddr *) &client_addr, sizeof(struct sockaddr)) == -1)
-	{
-		perror("connect");
-		exit(1);
-	}
+void start_timer(int fd)
+{	
+	pthread_t tid;	
+	int *fdp = malloc(sizeof(int));
+	*fdp = fd;
+	pthread_create(&tid,NULL,timer_runner, (void *)fdp);
+}
 
 
+void print_banner()
+{
+	puts("   ______                             __          ____   __");
+	puts("  / ____/  ____     ____    __  __   / /  ___    / __/  / /_");
+	puts(" / /      / __ \\   / __ \\  / / / /  / /  / _ \\  / /_   / __/");
+	puts("/ /___   / /_/ /  / /_/ / / /_/ /  / /  /  __/ / __/  / /_   _");
+	puts("\\____/   \\____/  / .___/  \\__, /  /_/   \\___/ /_/     \\__/  (_)");
+	puts("                /_/      /____/");
+	puts("    ___     __     ______   _  __");
+	puts("   /   |   / /    / ____/  | |/ /");
+	puts("  / /| |  / /    / __/     |   /");
+	puts(" / ___ | / /___ / /___    /   |");
+	puts("/_/  |_|/_____//_____/   /_/|_|");
+	puts("");
+	puts("    ______                    __    __          ______            __                   __           __");
+	puts("   / ____/    ____   ____    / /   / /         / ____/  ____ _   / /  _____  __  __   / /  ____ _  / /_  ____    _____");
+	puts("  / __/      / __ \\ / __ \\  / /   / /         / /      / __ `/  / /  / ___/ / / / /  / /  / __ `/ / __/ / __ \\  / ___/");
+	puts(" / /___     / /_/ // /_/ / / /   / /         / /___   / /_/ /  / /  / /__  / /_/ /  / /  / /_/ / / /_  / /_/ / / /");
+	puts("/_____/    / .___/ \\____/ /_/   /_/          \\____/   \\__,_/  /_/   \\___/  \\__,_/  /_/   \\__,_/  \\__/  \\____/ /_/");
+	puts("          /_/                                                                                                       ");
+}
+
+void init()
+{
+	setbuf(stdout, 0);
+	setbuf(stderr, 0);
+	setbuf(stdin, 0);
 }
 
 int main(int argc, char *argv[])
 {
 
+	init();
+	print_banner();
 	/* Do more magic */
-	if(argc != 2)	fatal("usage: ./server <ip>:<port>");	
+	if(argc != 2) fatal("usage: ./server <ip>:<port>");	
 	/* 
 	   Prepare to setup a reoccurring event every 10s. If it_interval, or it_value is omitted, it will be a single alarm 10s after it has been set. 
 	*/
@@ -102,56 +97,25 @@ int main(int argc, char *argv[])
 	char sign[] = ":";
 	char *address = strtok(arg, sign);
 	int port = atoi(strtok(NULL, sign));	
-	initCalcLib();	
-	int ret;
- 	int listen_fd;	
-	int epfd;
-    // create a datagram socket
-    listen_fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    struct sockaddr_in server_addr;
-    bzero(&server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    if(strcmp(address, "0.0.0.0")==0)
-    {
-        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    } else 
-    {
-        inet_pton(AF_INET, address, &server_addr.sin_addr);
-    }
-    
-    server_addr.sin_port = htons(port);
-
-    int reuse = 1;
-    ret = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-	if(ret == -1)
-	{
-		perror("setsockopt addr");
-		exit(1);
-	}
-
-	ret = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
-	if(ret == -1)
-	{
-		perror("setsockopt port");
-		exit(1);
-	}
-
-
-   	if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
-	{
-		perror("bind listen");
-		exit(1);
-	}
-
-	epfd = epoll_create(MAX_POLL_SIZE); 
+	// ---init of server---
+	server = malloc(sizeof(struct context_t));
+	uint8_t *state = (server->state=calloc(MAX_INIT_SIZE,sizeof(uint8_t)));
+	struct sockaddr_in *addrs = (server->addrs = calloc(MAX_INIT_SIZE,sizeof(struct sockaddr_in)));
+	int listen_fd = (server->listen_fd = udp_nonblocking_listen(address, port,server));
+	struct sockaddr_in server_addr = server->addrs[listen_fd];
+	server->load = 1;
+	int epfd = (server->epfd = epoll_create(MAX_POLL_SIZE)); 
+	uint8_t *mail_box = (server->mail_box  = malloc(MAX_INIT_SIZE)); 
+	struct result_t *results = (server->results = calloc(MAX_INIT_SIZE, sizeof(struct result_t)));
+	uint8_t *timeout = (server->timeout = calloc(MAX_INIT_SIZE, sizeof(uint8_t)));
+	// ---
 	
 	struct epoll_event ev;
     struct epoll_event events[MAX_POLL_SIZE];
 
 	ev.events = EPOLLIN | EPOLLET;
 	ev.data.fd = listen_fd;
-
+	
 	if(epoll_ctl(epfd, EPOLL_CTL_ADD, listen_fd, &ev) < 0)
 	{
 		fprintf(stderr, "unable to add event for fd: %d\n", listen_fd);
@@ -161,39 +125,86 @@ int main(int argc, char *argv[])
 	puts("add ok.");
 #endif
 	int nfds;
+
+	int check_interval = 200;
+
 	for(;;)
 	{
-		// max event return 999 no timeout
+		// max event return 999 ,200ms timeout(1 times check/s)
 		nfds = epoll_wait(epfd, events, 999, -1);	
-		if(nfds == -1)
-		{
-			perror("epoll_wait");
-			break;
-		}
-		
-		for(int i=0; i < nfds; i++)
-		{	
-			// accept
-			if(events[i].data.fd == listen_fd)
-			{
-
 #ifdef DEBUG
-				printf("listen fd: %d\n", listen_fd);
-#endif	
-				struct epoll_event conn_ev;
-				int conn_fd = udp_accept(listen_fd, server_addr);
-				if(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, &conn_ev) < 0)
+		//printf("nfds:%d\n",nfds);
+#endif
+		// TODO: check for timeout array
+		// except for listen fd
+		if(nfds >= 0)
+		{
+			for(int i=0; i < nfds; i++)
+			{	
+				int fd = events[i].data.fd;
+				// accept
+				if(fd == listen_fd)
 				{
-					fprintf(stderr, "unable to add event for conn fd: %d\n", conn_fd);
-					return -1;
-				} 
+#ifdef DEBUG
+					printf("listen fd: %d\n", listen_fd);
+#endif	
+				
+					struct epoll_event conn_ev;
+				
+					int conn_fd = udp_accept(listen_fd, server_addr, addrs);
+					if(conn_fd == -1)
+					{
+						continue;	
+					}
+					conn_ev.data.fd = conn_fd;
+					conn_ev.events = EPOLLOUT | EPOLLIN;	 
+					state[conn_fd] = MSG_RCV;
+					server->timeout[conn_fd] = 0; 
+					
+					// 10s	
+					//start_timer(conn_fd, server);
+					make_nonblocking(conn_fd);
+					printf("%d\n",conn_fd);
+					start_timer(conn_fd);
+					if(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, &conn_ev) < 0)
+					{
+						//TODO: clean inactive fds
+						fprintf(stderr, "unable to add event for conn fd: %d\n", conn_fd);
+						return -1;
+					} 
+					printf("added fd: %d\n",conn_fd);	
+					server->load++;		
+				}
 				else
 				{
-					handler(events[i].data.fd);
-				}		  	
-			}
-		}	
+#ifdef DEBUG
+					printf("fd:%d\n",fd);		
+#endif
+					// callback	
+					if(handler(fd, server) == -1)
+					{	
+
+						send_timeout(fd, server);
+						disconnect(fd);
+					}
+						
+				}	
+			}	
+		}
+		else if(nfds < 0)
+		{
+			perror("epoll wait");
+			exit(1);		
+		}
+	
+
+		
 	}
+#ifdef DEBUG
+#endif	
+//	free(state);
+//	free(addrs);
+//	free(server);
 	close(listen_fd);
 	return (0);
  }
