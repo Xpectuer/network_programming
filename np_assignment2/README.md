@@ -7,7 +7,7 @@ Please ensure you are under **linux kernel** environment
 ```bash
 # to compile 
 make
-bin/server 0.0.0.0:<aribitary port>
+bin/server 0.0.0.0:<arbitary port>
 bin/client 127.0.0.1:<port>
 
 # to clean
