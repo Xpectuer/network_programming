@@ -6,8 +6,15 @@ SVR=bin/server
 TST=bin/test
 PTHREAD=-pthread
 
-all: libcalc $(CLI) $(SVR) $(TST)
+
+
+all: directory libcalc $(CLI) $(SVR) $(TST) 	
 	echo 'compile complete!'
+
+
+directory:
+	[ ! -d './bin' ] && mkdir  ./bin
+
 
 servermain.o: servermain.c protocol.h 
 	$(CC) $(DBG) -Wall -c servermain.c -I.
