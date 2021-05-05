@@ -51,7 +51,7 @@ handler.o: handler.c common.h
 
 libudp: udp_server.o log.o read.o utils.o calcLib.o accept.o  handler.o
 	ar -rc libudp.a  $^
- 
+	rm $^ 
 calcLib.o: calcLib.c calcLib.h
 	$(CC) -Wall -fPIC -c calcLib.c
 
@@ -60,4 +60,4 @@ libcalc: calcLib.o
 
 
 clean:
-	rm *.o *.a test server client
+	rm *.o *.a $(TST) $(SVR) $(CLI)
