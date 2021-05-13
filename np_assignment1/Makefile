@@ -5,9 +5,14 @@ CLI=bin/client
 TEST=bin/test
 
 BINS=$(wildcard bin/*)
-CC=gcc-10
+CC=gcc
 
-all: libcalc $(TEST) $(CLI) $(SVR)
+all: directory libcalc $(TEST) $(CLI) $(SVR)
+	echo 'compile complete!'
+	
+directory: 
+	mkdir -p ./bin
+
 
 servermain.o: servermain.c
 	$(CC) -Wall $(DBG) -c servermain.c -I.
@@ -31,7 +36,7 @@ $(SVR): servermain.o calcLib.o libtcp
 
 
 tcp_server.o: tcp_server.c
-	gcc -c   $^ -o $@
+	gcc -c  $^ -o $@
 
 tcp_client.o: tcp_client.c
 	gcc -c $^ -o $@

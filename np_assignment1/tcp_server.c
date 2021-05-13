@@ -41,10 +41,6 @@ int tcp_listen(char* address, int port)
         perror("bind failed");
         exit(1);
     }
-    //    error(1, errno, "bind failed");
-	
-
-	
     int rt2 = listen(listen_fd, LISTENQ);
     if (rt2 < 0)
     {

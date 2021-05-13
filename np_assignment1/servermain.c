@@ -275,6 +275,14 @@ int main(int argc, char *argv[]){
               puts("accept failed!");
               exit(1);
           }
+#ifdef DEBUG
+		  printf("fd: %d\n", conn_fd);
+#endif
+		  if(conn_fd > MAX_FD_Q)
+		  {
+			  puts("too many connections");
+		  	  close(conn_fd);
+		  }
           char* cli_addr = inet_ntoa(client_addr.sin_addr);
           unsigned short pport = client_addr.sin_port;
           #ifdef DEBUG

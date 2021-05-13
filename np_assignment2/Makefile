@@ -13,7 +13,7 @@ all: directory libcalc $(CLI) $(SVR) $(TST)
 
 
 directory:
-	[ ! -d './bin' ] && mkdir  ./bin
+	mkdir -p ./bin
 
 
 servermain.o: servermain.c protocol.h 

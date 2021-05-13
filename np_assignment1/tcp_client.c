@@ -1,10 +1,7 @@
 #include "common.h"
 
 
-int tcp_client(char *address, int port) {
-
-
-    
+int tcp_client(char *address, int port) {    
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 

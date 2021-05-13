@@ -18,7 +18,7 @@ int udp_client(char *ip_addr, int port)
     struct sockaddr *reply_addr;
     reply_addr = malloc(server_len);
 
-    char send_line[MAXLINE], recv_line[MAXLINE + 1];
+	// char send_line[MAXLINE], recv_line[MAXLINE + 1];
     socklen_t buf_len;
     int n;
 

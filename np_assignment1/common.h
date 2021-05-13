@@ -2,8 +2,10 @@
 #define ALEX_COMMON_H
 
 
-#define LISTENQ 5
+#define LISTENQ 1024
 #define MAXLINE 1024
+// 9-4 = 5
+#define MAX_FD_Q 9
 
 #include    <sys/types.h>    /* basic system data types */
 #include    <sys/socket.h>    /* basic socket definitions */
