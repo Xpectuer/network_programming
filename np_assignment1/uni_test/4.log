@@ -1,7 +1,0 @@
-Host 127.0.0.0.1, and port 9091.
-TEXT TCP 1.0
-TEXT TCP 1.1
-
-
-ERROR TO
-service ended
