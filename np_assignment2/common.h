@@ -14,7 +14,7 @@
 #define MAX_POLL_SIZE 128
 #define TIMEOUT_INTERVAL 10
 //#define DEBUG
-#define INFO
+//#define INFO
 
 #define MSG_RCV 0
 #define PRO_SET 1

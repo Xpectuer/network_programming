@@ -202,6 +202,11 @@ void udp_client(char *address, int port)
 	};
 	printf("%s\n", msg_sign[msg->message]);
 		
+	if(msg->message==0)
+	{
+		puts("timeout");
+		exit(1);
+	}
 	free(response);
 	free(msg);
 	

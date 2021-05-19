@@ -34,9 +34,9 @@ void timer_runner(void* fdp)
 {
 	sleep(TIMEOUT_INTERVAL);
 	// global context
-	puts("www");
 	int fd= *(int*) fdp;
 #ifdef DEBUG
+	printf("fd: %d timeout\n",fd);
 	printf("server:%p fd:%d\n ",server,fd);
 #endif
 	server->timeout[fd] = 1;	
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 					printf("%d\n",conn_fd);
 
 					// -----------------------------
-					//start_timer(conn_fd);
+					start_timer(conn_fd);
 					//---------------------------
 					if(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, &conn_ev) < 0)
 					{
@@ -180,7 +180,9 @@ int main(int argc, char *argv[])
 					// callback	
 					if(handler(fd, server) == -1)
 					{	
+#ifdef INFO
 						puts("disconnect!");
+#endif 
 						send_timeout(fd, server);
 						disconnect(fd);
 					}
