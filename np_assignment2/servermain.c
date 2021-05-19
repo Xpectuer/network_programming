@@ -66,12 +66,6 @@ void print_banner()
 	puts(" / ___ | / /___ / /___    /   |");
 	puts("/_/  |_|/_____//_____/   /_/|_|");
 	puts("");
-	puts("    ______                    __    __          ______            __                   __           __");
-	puts("   / ____/    ____   ____    / /   / /         / ____/  ____ _   / /  _____  __  __   / /  ____ _  / /_  ____    _____");
-	puts("  / __/      / __ \\ / __ \\  / /   / /         / /      / __ `/  / /  / ___/ / / / /  / /  / __ `/ / __/ / __ \\  / ___/");
-	puts(" / /___     / /_/ // /_/ / / /   / /         / /___   / /_/ /  / /  / /__  / /_/ /  / /  / /_/ / / /_  / /_/ / / /");
-	puts("/_____/    / .___/ \\____/ /_/   /_/          \\____/   \\__,_/  /_/   \\___/  \\__,_/  /_/   \\__,_/  \\__/  \\____/ /_/");
-	puts("          /_/                                                                                                       ");
 }
 
 void init()
@@ -165,7 +159,10 @@ int main(int argc, char *argv[])
 					//start_timer(conn_fd, server);
 					make_nonblocking(conn_fd);
 					printf("%d\n",conn_fd);
-					start_timer(conn_fd);
+
+					// -----------------------------
+					//start_timer(conn_fd);
+					//---------------------------
 					if(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, &conn_ev) < 0)
 					{
 						//TODO: clean inactive fds
@@ -183,7 +180,7 @@ int main(int argc, char *argv[])
 					// callback	
 					if(handler(fd, server) == -1)
 					{	
-
+						puts("disconnect!");
 						send_timeout(fd, server);
 						disconnect(fd);
 					}

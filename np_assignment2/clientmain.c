@@ -7,10 +7,12 @@
 #include <calcLib.h>
 // #include "protocol.h"
 
+#define INTR_TIMES 5
+#define RT_TIMES 3
 
 int major_version = 1;
 int minor_version = 0;
-
+int T = INTR_TIMES;
 void usage()
 {
     puts("usage: ./client <ip:port>");
@@ -43,18 +45,8 @@ inline int version_check(struct calcMessage *msg, struct calcProtocol *response)
 	return (ntohs(msg->major_version)==ntohs(response->major_version))?0:1;
 } 
 
-
-
-int main(int argc, char *argv[])
+void udp_client(char *address, int port)
 {
-    init();
-    /* Do magic */
-    if(argc != 2) usage(); 
-
-    char* sign = ":";
-    char *address = strtok(argv[1], sign);
-    int port = atoi(strtok(NULL, sign));
-    
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
 	//setbuf((FILE*)fd,0);
 	
@@ -85,7 +77,6 @@ int main(int argc, char *argv[])
     size_t msg_len = sizeof(struct calcMessage);
 	
 	msg = (struct calcMessage* )malloc(sizeof(struct calcMessage));
-	make_msg(msg);
 
 #ifdef DEBUG
 	printf("message is: %d\n", msg->type);
@@ -95,125 +86,136 @@ int main(int argc, char *argv[])
 	// sendto 	
 	struct calcProtocol* response; 
 	response = (struct calcProtocol*) malloc(sizeof(struct calcProtocol));
-
-	for(int t = 10;t>=0;t--)
+	memset(msg,0,sizeof(msg));
+	memset(response,0,sizeof(response));
+	make_msg(msg);
+	for(int t = RT_TIMES;t>=0;t--)
 	{
-		size_t rt = sendto(fd,
-	                       msg, msg_len, 
-	                       0, (struct sockaddr *) &server_addr,
-						   server_len);
-		if(rt < 0)
-		{
-			fatal("Unable to send msg, Exit.");		
-		}
+	size_t rt = sendto(fd,
+		               msg, msg_len, 
+		               0, (struct sockaddr *) &server_addr,
+					   server_len);
+	if(rt < 0)
+	{
+		fatal("Unable to send msg, Exit.");		
+	}
 	
-		len = 0;	
-#ifdef DEBUG
-		printf("send %d bytes..\n", sizeof(struct calcProtocol));
-#endif		
-
-		rt = recvfrom(fd, (struct calcProtocol*) response, sizeof(struct calcProtocol), 0, reply_addr, &len);
-		// resending
-		if(rt ==-1)
-		{
-			puts("recv timeout, resending...");
-			//fatal("Unable to receive msg, Exit.");
-			continue;
-		}
-		if(rt != sizeof(struct calcProtocol))
-		{
-			fprintf(stderr, "%d %d version not applicable\n", rt, sizeof(struct calcProtocol));
-			exit(1);	
-		}
-		break;
+	len = 0;	
+	#ifdef DEBUG
+	printf("send %d bytes..\n", sizeof(struct calcProtocol));
+	#endif		
+	
+	rt = recvfrom(fd, (struct calcProtocol*) response, sizeof(struct calcProtocol), 0, reply_addr, &len);
+	// resending
+	if(rt ==-1)
+	{
+		puts("recv timeout, resending...");
+		//fatal("Unable to receive msg, Exit.");
+		continue;
+	}
+	if(rt != sizeof(struct calcProtocol))
+	{
+		fprintf(stderr, "%d %d version not applicable\n", rt, sizeof(struct calcProtocol));
+		exit(1);	
+	}
+	break;
 	}
 	parse_protocol(response);
 	printf("float is: %lf\n",response->flResult);	
 	// version check
 	
 	char arith_sign[4]={
-		'+',
-		'-',
-		'*',
-		'/'
+	'+',
+	'-',
+	'*',
+	'/'
 	};
 	response->type++;	
 	printf("arith: %d\n", response->arith);
 	if(response->arith < 5)
 	{	
-		printf("%d %c %d \n",
-				response->inValue1, 
-				arith_sign[(response->arith-1)&3], 
-				response->inValue2);		
-		if(fgets(send_buf, MAXLINE, stdin) != NULL)
-		{
-			int i = strlen(send_buf); 	
-			send_buf[i] = 0; 
-		}
-		response->inResult = (int32_t) atoll(send_buf);	
-			
+	printf("%d %c %d \n",
+			response->inValue1, 
+			arith_sign[(response->arith-1)&3], 
+			response->inValue2);		
+	if(fgets(send_buf, MAXLINE, stdin) != NULL)
+	{
+		int i = strlen(send_buf); 	
+		send_buf[i] = 0; 
+	}
+	response->inResult = (int32_t) atoll(send_buf);	
+		
 	}
 	// float opts
 	else if(response->arith >= 5 && response->arith <=8)
 	{
-		
-		printf("%8.8g %c %8.8g \n",
-				response->flValue1, 
-				arith_sign[(response->arith-1)&3], 
-				response->flValue2);		
-		if(fgets(send_buf, MAXLINE, stdin) != NULL)
-		{
-			int i = strlen(send_buf); 	
-			send_buf[i] = 0; 
-		}
 	
-
-		response->flResult = (double) strtod(send_buf, NULL);
+	printf("%8.8g %c %8.8g \n",
+			response->flValue1, 
+			arith_sign[(response->arith-1)&3], 
+			response->flValue2);		
+	if(fgets(send_buf, MAXLINE, stdin) != NULL)
+	{
+		int i = strlen(send_buf); 	
+		send_buf[i] = 0; 
+	}
+	
+	
+	response->flResult = (double) strtod(send_buf, NULL);
 	}	
 	else 
 	{	
-		puts("Invalid Arith...Exit.");
-		abort();	
+	puts("Invalid Arith...Exit.");
+	abort();	
 	}
-// --- -
+	// --- -
 	// sleep(10);
 	
-		int rt = sendto(fd,(struct calcProtocol *) response,sizeof(struct calcProtocol) , 
-		            0, (struct sockaddr *) &server_addr, server_len);
-		if(rt < 0)
-		{
-			fatal("Unable to send response...Exit");	
-		}		
-#ifdef DEBUG
-		printf("sent %d bytes to server\n",rt);
-#endif
-		len = 0;
-		// recv result message
-
-		int n = recvfrom(fd, (struct calcMessage *) msg, sizeof(struct calcMessage), 0, reply_addr, &len); 	
-		if(rt == -1)
-		{
-			puts("recv timeout...");
-			return 1;
-		}
-
-		parse_msg(msg);
-#ifdef DEBUG
-		printf("received %d,%d bytes from server\n",msg->message, n);
-#endif	
-		
-			
-
-
-
+	int rt = sendto(fd,(struct calcProtocol *) response,sizeof(struct calcProtocol) , 
+			    0, (struct sockaddr *) &server_addr, server_len);
+	if(rt < 0)
+	{
+		fatal("Unable to send response...Exit");	
+	}		
+	#ifdef DEBUG
+	printf("sent %d bytes to server\n",rt);
+	#endif
+	len = 0;
+	// recv result message
+	
+	int n = recvfrom(fd, (struct calcMessage *) msg, sizeof(struct calcMessage), 0, reply_addr, &len); 	
+	if(rt == -1)
+	{
+		puts("recv timeout...");
+		return 1;
+	}
+	
+	parse_msg(msg);
+	#ifdef DEBUG
+	printf("received %d,%d bytes from server\n",msg->message, n);
+	#endif	
+	
 	char* msg_sign[3]={
-		"NOT APPLICABLE",
-		"OK",
-		"NOT OK"
+	"NOT APPLICABLE",
+	"OK",
+	"NOT OK"
 	};
 	printf("%s\n", msg_sign[msg->message]);
 		
 	free(response);
 	free(msg);
 	
+}
+
+int main(int argc, char *argv[])
+{
+    init();
+    /* Do magic */
+    if(argc != 2) usage(); 
+
+    char* sign = ":";
+    char *address = strtok(argv[1], sign);
+    int port = atoi(strtok(NULL, sign));
+   	while(T--)	udp_client(address, port);
+
 }
