@@ -174,9 +174,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-#ifdef DEBUG
-					printf("fd:%d\n",fd);		
-#endif
+					//printf("fd:%d\n",fd);		
 					// callback	
 					if(handler(fd, server) == -1)
 					{	

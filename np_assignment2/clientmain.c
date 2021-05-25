@@ -121,7 +121,9 @@ void udp_client(char *address, int port)
 	break;
 	}
 	parse_protocol(response);
+#ifdef DEBUG
 	printf("float is: %lf\n",response->flResult);	
+#endif
 	// version check
 	
 	char arith_sign[4]={

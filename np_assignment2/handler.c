@@ -125,6 +125,8 @@ if(server->timeout[fd] == 1)
 			break;
 		case PRO_RCV:
 
+
+			printf("[SERVER] client_id %d \n", fd-4);
 			_message.message = server->mail_box[fd];
 			if(send_msg(&_message, fd,  &client_addr)<0)
 			{
