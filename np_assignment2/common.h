@@ -27,7 +27,6 @@
 #define PROTOCOL_MAJOR_VER 1
 #define PROTOCOL_MINOR_VER 0
 
-#include "read.h"
 #include "protocol.h"
 
 

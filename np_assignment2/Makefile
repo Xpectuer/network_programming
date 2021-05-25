@@ -42,10 +42,6 @@ udp_server.o: udp_server.c common.h
 log.o: log.c common.h
 	$(CC)  -fPIC -c log.c 
 
-
-read.o: read.c common.h
-	$(CC)  -fPIC -c read.c
-
 utils.o: utils.c common.h
 	$(CC)  -fPIC -c $<;
 
@@ -56,7 +52,7 @@ accept.o: accept.c common.h
 handler.o: handler.c common.h
 	$(CC) $(DBG)  -fPIC -c $<;
 
-libudp: udp_server.o log.o read.o utils.o calcLib.o accept.o  handler.o
+libudp: udp_server.o log.o utils.o calcLib.o accept.o  handler.o
 	ar -rc libudp.a  $^
 	rm $^ 
 calcLib.o: calcLib.c calcLib.h
