@@ -16,24 +16,24 @@ directory:
 
 
 servermain.o: servermain.c
-	$(CC) -Wall $(DBG) -c servermain.c -I.
+	$(CC) -pthread  $(DBG) -c servermain.c -I.
 
 clientmain.o: clientmain.c
-	$(CC) -Wall -c clientmain.c -I.
+	$(CC)  $(DBG) -c  clientmain.c -I.
 
 main.o: main.cpp
-	$(CC) -Wall -c main.cpp -I.
+	$(CC)  -c main.cpp -I.
 
 
 $(TEST): main.o calcLib.o
-	$(CC) -L./ -Wall -o $@ main.o -lcalc
+	$(CC) -L./  -o $@ main.o -lcalc
 
 
 $(CLI): clientmain.o calcLib.o libtcp
-	$(CC)  -Wall -o $@ clientmain.o -L./ -lcalc -ltcp
+	$(CC)   -o $@ clientmain.o -L./ -lcalc -ltcp
 
 $(SVR): servermain.o calcLib.o libtcp
-	$(CC)  -Wall -o $@ servermain.o -L./ -lcalc -ltcp
+	$(CC)   -o $@ servermain.o -L./ -lcalc -ltcp
 
 
 tcp_server.o: tcp_server.c
@@ -54,7 +54,7 @@ libtcp: tcp_server.o tcp_client.o log.o handlers.o
 
 
 calcLib.o: calcLib.c calcLib.h
-	gcc -Wall -fPIC -c calcLib.c
+	gcc  -fPIC -c calcLib.c
 
 libcalc: calcLib.o
 	ar -rc libcalc.a  calcLib.o

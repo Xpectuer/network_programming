@@ -161,7 +161,12 @@ int main(int argc, char *argv[])
          puts("service ended");
 		 close(socket_fd);
      }
-     fprintf(stdout, "%s\n", recv_buf);
+	 else if (strcmp(recv_buf,"ERROR TO")==0)
+	 {
+		 close(socket_fd);
+		 puts("timeout");
+		 exit(1);
+	 }
 	 char *srs;
 	 srs = handle_cal(recv_buf,sizeof(recv_buf));
 

@@ -27,10 +27,11 @@
 #include    <unistd.h>
 #include    <sys/wait.h>
 #include    <sys/un.h>        /* for Unix domain sockets */
-#include 	<semaphore.h>
-
+//#include 	<sys/sem.h>
 #include    <sys/select.h>    /* for convenience */
 // #include    <sys/sysctl.h>
+#include	<semaphore.h>
+
 #include    <poll.h>        /* for convenience */
 #include    <strings.h>        /* for convenience */
 #include    <sys/ioctl.h>

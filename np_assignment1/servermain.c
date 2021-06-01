@@ -58,9 +58,9 @@ int main(int argc, char *argv[]){
     socklen_t client_len = sizeof(client_addr);
     int conn_fd;
 	
-	char GET_CONN_FREE[] = "GET_CONN_FREE";
-	sem_t *mutex=sem_open(GET_CONN_FREE, O_CREAT , 0777, 1);
-
+	char GET_CONN_FREE[] = "/GET_CONN_FREE";
+	sem_t *mutex = sem_open(GET_CONN_FREE, O_CREAT , 0777, 1);
+	
     while(1)
     {
 		  			
@@ -77,6 +77,7 @@ int main(int argc, char *argv[]){
 		  {
 			  puts("too many connections");
 		  	  close(conn_fd);
+			  break;
 		  }
           char* cli_addr = inet_ntoa(client_addr.sin_addr);
           unsigned short pport = client_addr.sin_port;
@@ -90,26 +91,35 @@ int main(int argc, char *argv[]){
 		setsockopt(conn_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&read_timeout, sizeof read_timeout);
 	
           // -----handler----
+		  
           if(fork()==0)
 		  {
 			close(listen_fd);
-
-			sem_wait(mutex);
+			/*
+			-----------------------------------------
+			|		  synchronized handler			 |
+			-----------------------------------------
+			*/
+				
+			if(sem_wait(mutex)<0) exit(1);
+					
 			handler(conn_fd);
-			sem_post(mutex);	
-          	printf("Client %s:%hu hanged up\n",cli_addr, pport);
-			exit(0);
-		  } else {
-			close(conn_fd);
-			
-		  }
+
+			if(sem_post(mutex)<0) exit(1);	
+
+    	      	printf("Client %s:%hu hanged up\n",cli_addr, pport);
+				exit(0);
+			  } else {
+				// parent
+				close(conn_fd);
+					
+			  }
           // ----------
           #ifdef DEBUG   
           #endif
     }
  
      
-   // handler() 
 
     return 0;
 }
