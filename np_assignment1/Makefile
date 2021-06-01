@@ -4,6 +4,7 @@ SVR=bin/server
 CLI=bin/client
 TEST=bin/test
 
+
 BINS=$(wildcard bin/*)
 CC=gcc
 
@@ -44,7 +45,10 @@ tcp_client.o: tcp_client.c
 log.o: log.c
 	gcc -c $^ -o $@
 
-libtcp: tcp_server.o tcp_client.o log.o
+handlers.o: handlers.c
+	$(CC) -c $^ -o $@
+
+libtcp: tcp_server.o tcp_client.o log.o handlers.o
 	ar -rc libtcp.a  $^
 
 

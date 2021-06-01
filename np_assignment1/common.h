@@ -2,10 +2,12 @@
 #define ALEX_COMMON_H
 
 
-#define LISTENQ 1024
+#define LISTENQ 5
 #define MAXLINE 1024
 // 9-4 = 5
 #define MAX_FD_Q 9
+
+#include "calcLib.h"
 
 #include    <sys/types.h>    /* basic system data types */
 #include    <sys/socket.h>    /* basic socket definitions */
@@ -25,6 +27,7 @@
 #include    <unistd.h>
 #include    <sys/wait.h>
 #include    <sys/un.h>        /* for Unix domain sockets */
+#include 	<semaphore.h>
 
 #include    <sys/select.h>    /* for convenience */
 // #include    <sys/sysctl.h>
@@ -32,6 +35,8 @@
 #include    <strings.h>        /* for convenience */
 #include    <sys/ioctl.h>
 #include    <pthread.h>
+#include <math.h>
+
 
 #ifdef EPOLL_ENABLE
 #include    <sys/epoll.h>
@@ -53,6 +58,7 @@ int tcp_client(char *address, int port);
 void fatal(char* s);
 
 
+void handler(int fd);
 #ifdef __cplusplus
 }
 #endif
